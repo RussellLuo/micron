@@ -19,7 +19,7 @@ func New(client redis.UniversalClient) *Locker {
 
 func (l *Locker) Lock(job string, ttl time.Duration) (bool, error) {
 	if _, err := l.lockClient.Obtain(job, ttl, nil); err != nil {
-		if err != redislock.ErrNotObtained {
+		if err == redislock.ErrNotObtained {
 			return false, nil
 		}
 		return false, err
