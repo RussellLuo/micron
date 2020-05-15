@@ -75,49 +75,49 @@ func TestCron_Add(t *testing.T) {
 	}
 }
 
-func TestCron_StartFrom(t *testing.T) {
-	cron := New(&locker{}, nil)
+func TestCron_startFrom(t *testing.T) {
+	cron := New(&locker{}, &Options{
+		// LockTTL must be less than the execution interval of the job.
+		LockTTL: 100 * time.Millisecond,
+	})
 
-	// Job is scheduled to be executed every second.
+	// Job is scheduled to be executed at every second.
 	expr := "* * * * * * *"
 
 	// So we expect that the job will be executed at least 3 times
 	// by waiting for 4s.
-	start := time.Now()
-	durations := []time.Duration{
-		time.Second, // start + 1s
-		time.Second, // start + 2s
-		time.Second, // start + 3s
+	start := time.Now().Truncate(time.Second)
+	timePoints := []time.Time{
+		start.Add(time.Second),
+		start.Add(2 * time.Second),
+		start.Add(3 * time.Second),
 	}
 	waitAndStop := func() {
 		time.Sleep(4 * time.Second)
 		cron.Stop()
 	}
 
-	exitC := make(chan time.Time, len(durations)+1) // one more size for error-tolerant
+	exitC := make(chan time.Time, len(timePoints)+1) // one more size for error-tolerant
 
 	// Add and start the job.
 	cron.Add("job", expr, func() { // nolint:errcheck
 		exitC <- time.Now()
 	})
-	cron.StartFrom(start)
+	cron.startFrom(start)
 
 	waitAndStop()
 
 	// Check the final execution time.
-	accum := time.Duration(0)
-	for _, d := range durations {
-		got := (<-exitC).Truncate(time.Millisecond)
-		accum += d
-		want := start.Add(accum).Truncate(time.Millisecond)
+	for _, tp := range timePoints {
+		got := <-exitC
+		want := tp
 
 		// The maximal error of cronexpr is about 1s.
-		err := 900 * time.Millisecond
-		min := want.Add(-err)
+		err := 500 * time.Millisecond
 		max := want.Add(err)
 
-		if got.Before(min) || got.After(max) {
-			t.Fatalf("Job executed at: want [%s, %s], got %s", min, max, got)
+		if got.Before(want) || got.After(max) {
+			t.Fatalf("Job executed at: want [%s, %s], got %s", want, max, got)
 		}
 	}
 }
@@ -126,19 +126,19 @@ func TestCron_Stop(t *testing.T) {
 	count := int32(0)
 
 	cron := New(&locker{}, nil)
-	// every two seconds
+	// Executed at every 2nd second.
 	cron.Add("job", "*/2 * * * * * *", func() { // nolint:errcheck
 		atomic.AddInt32(&count, 1)
 	})
 	cron.Start()
 
 	// Stop the job before the time it's scheduled to execute.
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	cron.Stop()
 	wantCount := int32(0)
 
-	// Wait for another 1.5ms to ensure that 2s elapses.
-	time.Sleep(1500 * time.Millisecond)
+	// Wait for another 1.9s to ensure that 2s elapses.
+	time.Sleep(1900 * time.Millisecond)
 
 	gotCount := atomic.LoadInt32(&count)
 	if gotCount != wantCount {
@@ -152,8 +152,8 @@ func Test_MultipleCrons(t *testing.T) {
 
 	startCron := func() *Cron {
 		cron := New(locker, nil)
-		// every second
-		cron.Add("job", "* * * * * * *", func() { // nolint:errcheck
+		// Executed at every 2nd second.
+		cron.Add("job", "*/2 * * * * * *", func() { // nolint:errcheck
 			atomic.AddInt32(&count, 1)
 		})
 		cron.Start()
@@ -165,8 +165,8 @@ func Test_MultipleCrons(t *testing.T) {
 	cron2 := startCron()
 	cron3 := startCron()
 
-	// Expect that the job will be executed at least 3 times by waiting for 4s.
-	time.Sleep(4 * time.Second)
+	// Expect that the job will be executed at least 3 times by waiting for 6s.
+	time.Sleep(6 * time.Second)
 	cron1.Stop()
 	cron2.Stop()
 	cron3.Stop()

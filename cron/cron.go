@@ -76,7 +76,7 @@ func newJob(name, expr string, task func(), locker Locker, opts *Options) *job {
 
 func (j *job) Schedule(prev time.Time) {
 	next := j.scheduler.Next(prev)
-	d := next.Sub(prev)
+	d := next.Sub(time.Now())
 
 	t := time.AfterFunc(d, func() {
 		if atomic.LoadInt32(&j.stopped) == 1 {
@@ -143,13 +143,13 @@ func (c *Cron) Add(name, expr string, task func()) error {
 	return nil
 }
 
-// Start is shorthand for StartFrom(time.Now()).
+// Start starts to schedule all jobs from now on.
 func (c *Cron) Start() {
-	c.StartFrom(time.Now())
+	c.startFrom(time.Now())
 }
 
-// Start starts to schedule all jobs from the time now.
-func (c *Cron) StartFrom(now time.Time) {
+// startFrom starts to schedule all jobs from the given time now.
+func (c *Cron) startFrom(now time.Time) {
 	for _, job := range c.jobs {
 		job.Schedule(now)
 	}
