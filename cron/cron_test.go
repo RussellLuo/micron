@@ -97,7 +97,7 @@ func TestCron_StartFrom(t *testing.T) {
 	exitC := make(chan time.Time, len(durations)+1) // one more size for error-tolerant
 
 	// Add and start the job.
-	cron.Add("job", expr, func() {
+	cron.Add("job", expr, func() { // nolint:errcheck
 		exitC <- time.Now()
 	})
 	cron.StartFrom(start)
@@ -126,7 +126,8 @@ func TestCron_Stop(t *testing.T) {
 	count := int32(0)
 
 	cron := New(&locker{}, nil)
-	cron.Add("job", "*/2 * * * * * *", func() { // every two seconds
+	// every two seconds
+	cron.Add("job", "*/2 * * * * * *", func() { // nolint:errcheck
 		atomic.AddInt32(&count, 1)
 	})
 	cron.Start()
@@ -151,7 +152,8 @@ func Test_MultipleCrons(t *testing.T) {
 
 	startCron := func() *Cron {
 		cron := New(locker, nil)
-		cron.Add("job", "* * * * * * *", func() { // every second
+		// every second
+		cron.Add("job", "* * * * * * *", func() { // nolint:errcheck
 			atomic.AddInt32(&count, 1)
 		})
 		cron.Start()
