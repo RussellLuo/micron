@@ -11,7 +11,7 @@ type Locker struct {
 	lockClient *redislock.Client
 }
 
-func New(client redis.Cmdable) *Locker {
+func New(client redis.UniversalClient) *Locker {
 	return &Locker{
 		lockClient: redislock.New(client),
 	}
