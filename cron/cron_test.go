@@ -25,12 +25,10 @@ func (l *locker) Lock(job string, ttl time.Duration) (bool, error) {
 	sem := lock.(*semaphore.Weighted)
 	success := sem.TryAcquire(1)
 	if success {
-		// The lock is obtained successfully.
-		go func() {
-			// Release the lock after ttl elapses.
-			time.Sleep(ttl)
+		// Release the obtained lock after ttl elapses.
+		time.AfterFunc(ttl, func() {
 			sem.Release(1)
-		}()
+		})
 	}
 
 	return success, nil
