@@ -49,26 +49,28 @@ func (o *Options) errHandler() func(error) {
 	return o.ErrHandler
 }
 
+type scheduler interface {
+	Next(time.Time) time.Time
+}
+
 type job struct {
 	name string
-	expr string
 	task func()
 
 	locker Locker
 	opts   *Options
 
-	scheduler *cronexpr.Expression
+	scheduler scheduler
 
 	timer   unsafe.Pointer // type: *time.Timer
 	stopped int32
 }
 
-func newJob(name, expr string, task func(), locker Locker, opts *Options) *job {
+func newJob(name string, task func(), scheduler scheduler, locker Locker, opts *Options) *job {
 	return &job{
 		name:      name,
-		expr:      expr,
 		task:      task,
-		scheduler: cronexpr.MustParse(expr),
+		scheduler: scheduler,
 		locker:    locker,
 		opts:      opts,
 	}
@@ -76,7 +78,7 @@ func newJob(name, expr string, task func(), locker Locker, opts *Options) *job {
 
 func (j *job) Schedule(prev time.Time) {
 	next := j.scheduler.Next(prev)
-	d := next.Sub(time.Now())
+	d := time.Until(next)
 
 	t := time.AfterFunc(d, func() {
 		if atomic.LoadInt32(&j.stopped) == 1 {
@@ -134,8 +136,8 @@ func (c *Cron) Add(name, expr string, task func()) error {
 
 	c.jobs[name] = newJob(
 		name,
-		expr,
 		task,
+		cronexpr.MustParse(expr),
 		c.locker,
 		c.opts,
 	)
