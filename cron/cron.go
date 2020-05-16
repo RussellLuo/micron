@@ -113,6 +113,7 @@ func (j *job) Stop() {
 	}
 }
 
+// Cron is a fault-tolerant job scheduler.
 type Cron struct {
 	jobs map[string]*job
 
@@ -129,6 +130,11 @@ func New(locker Locker, opts *Options) *Cron {
 	}
 }
 
+// Add adds a job with the given properties. If name already exists, Add will
+// return ErrJobExists, otherwise it will return nil.
+//
+// Note that the execution interval of the job, which is specified by expr,
+// must be greater than LockTTL.
 func (c *Cron) Add(name, expr string, task func()) error {
 	if _, ok := c.jobs[name]; ok {
 		return ErrJobExists
@@ -153,9 +159,10 @@ func (c *Cron) Start() {
 	}
 }
 
+// Stop stops all the jobs. For simplicity now, it does not wait for the inner
+// goroutines (which have been started before) to exit.
 func (c *Cron) Stop() {
 	for _, job := range c.jobs {
-		// For simplicity now, we do not wait for the inner goroutine to exit.
 		job.Stop()
 	}
 }
