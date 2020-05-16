@@ -9,6 +9,18 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+type everyScheduler struct {
+	d time.Duration
+}
+
+func every(d time.Duration) *everyScheduler {
+	return &everyScheduler{d: d}
+}
+
+func (s *everyScheduler) Next(prev time.Time) time.Time {
+	return prev.Add(s.d)
+}
+
 type locker struct {
 	locks sync.Map
 }
@@ -32,6 +44,84 @@ func (l *locker) Lock(job string, ttl time.Duration) (bool, error) {
 	}
 
 	return success, nil
+}
+
+func TestJob_Schedule(t *testing.T) {
+	job := newJob(
+		"job",
+		nil,                // task will be set later
+		every(time.Second), // executed every second
+		&locker{},
+		&Options{
+			// LockTTL must be less than the execution interval of the job.
+			LockTTL: 100 * time.Millisecond,
+		},
+	)
+
+	// So we expect that the job will be executed at least 3 times
+	// by waiting for 4s.
+	start := time.Now().Truncate(time.Second)
+	timePoints := []time.Time{
+		start.Add(time.Second),
+		start.Add(2 * time.Second),
+		start.Add(3 * time.Second),
+	}
+	waitAndStop := func() {
+		time.Sleep(4 * time.Second)
+		job.Stop()
+	}
+
+	exitC := make(chan time.Time, len(timePoints)+1) // one more size for error-tolerant
+
+	// Set the task and schedule the job.
+	job.task = func() {
+		exitC <- time.Now()
+	}
+	job.Schedule(start)
+
+	waitAndStop()
+
+	// Check the final execution time.
+	for _, tp := range timePoints {
+		got := <-exitC
+		want := tp
+
+		err := 100 * time.Millisecond
+		max := want.Add(err)
+
+		if got.Before(want) || got.After(max) {
+			t.Fatalf("Job executed at: want [%s, %s], got %s", want, max, got)
+		}
+	}
+}
+
+func TestJob_Stop(t *testing.T) {
+	job := newJob(
+		"job",
+		nil,                  // task will be set later
+		every(2*time.Second), // executed every two seconds
+		&locker{},
+		nil,
+	)
+
+	count := int32(0)
+	job.task = func() {
+		atomic.AddInt32(&count, 1)
+	}
+	job.Schedule(time.Now())
+
+	// Stop the job before the time it's scheduled to execute.
+	time.Sleep(100 * time.Millisecond)
+	job.Stop()
+	wantCount := int32(0)
+
+	// Wait for another 1.9s to ensure that 2s elapses.
+	time.Sleep(1900 * time.Millisecond)
+
+	gotCount := atomic.LoadInt32(&count)
+	if gotCount != wantCount {
+		t.Fatalf("Count: got (%d), want (%d)", gotCount, wantCount)
+	}
 }
 
 func TestCron_Add(t *testing.T) {
@@ -73,78 +163,7 @@ func TestCron_Add(t *testing.T) {
 	}
 }
 
-func TestCron_startFrom(t *testing.T) {
-	cron := New(&locker{}, &Options{
-		// LockTTL must be less than the execution interval of the job.
-		LockTTL: 100 * time.Millisecond,
-	})
-
-	// Job is scheduled to be executed at every second.
-	expr := "* * * * * * *"
-
-	// So we expect that the job will be executed at least 3 times
-	// by waiting for 4s.
-	start := time.Now().Truncate(time.Second)
-	timePoints := []time.Time{
-		start.Add(time.Second),
-		start.Add(2 * time.Second),
-		start.Add(3 * time.Second),
-	}
-	waitAndStop := func() {
-		time.Sleep(4 * time.Second)
-		cron.Stop()
-	}
-
-	exitC := make(chan time.Time, len(timePoints)+1) // one more size for error-tolerant
-
-	// Add and start the job.
-	cron.Add("job", expr, func() { // nolint:errcheck
-		exitC <- time.Now()
-	})
-	cron.startFrom(start)
-
-	waitAndStop()
-
-	// Check the final execution time.
-	for _, tp := range timePoints {
-		got := <-exitC
-		want := tp
-
-		// The maximal error of cronexpr is about 1s.
-		err := 500 * time.Millisecond
-		max := want.Add(err)
-
-		if got.Before(want) || got.After(max) {
-			t.Fatalf("Job executed at: want [%s, %s], got %s", want, max, got)
-		}
-	}
-}
-
-func TestCron_Stop(t *testing.T) {
-	count := int32(0)
-
-	cron := New(&locker{}, nil)
-	// Executed at every 2nd second.
-	cron.Add("job", "*/2 * * * * * *", func() { // nolint:errcheck
-		atomic.AddInt32(&count, 1)
-	})
-	cron.Start()
-
-	// Stop the job before the time it's scheduled to execute.
-	time.Sleep(100 * time.Millisecond)
-	cron.Stop()
-	wantCount := int32(0)
-
-	// Wait for another 1.9s to ensure that 2s elapses.
-	time.Sleep(1900 * time.Millisecond)
-
-	gotCount := atomic.LoadInt32(&count)
-	if gotCount != wantCount {
-		t.Fatalf("Count: got (%d), want (%d)", gotCount, wantCount)
-	}
-}
-
-func Test_MultipleCrons(t *testing.T) {
+func TestCron_MultipleInstances(t *testing.T) {
 	count := int32(0)
 	locker := &locker{}
 
