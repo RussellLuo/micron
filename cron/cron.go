@@ -54,13 +54,12 @@ type scheduler interface {
 }
 
 type job struct {
-	name string
-	task func()
+	name      string
+	task      func()
+	scheduler scheduler
 
 	locker Locker
 	opts   *Options
-
-	scheduler scheduler
 
 	timer   unsafe.Pointer // type: *time.Timer
 	stopped int32
@@ -105,12 +104,13 @@ func (j *job) Schedule(prev time.Time) {
 }
 
 func (j *job) Stop() {
+	t := (*time.Timer)(atomic.LoadPointer(&j.timer))
 	// Try to stop the timer.
-	t := atomic.LoadPointer(&j.timer)
-	(*time.Timer)(t).Stop()
-
-	// Set the stopped flag to stop the further rescheduling.
-	atomic.StoreInt32(&j.stopped, 1)
+	if !t.Stop() {
+		// The job has already been started, set the stopped flag
+		// to stop the further rescheduling.
+		atomic.StoreInt32(&j.stopped, 1)
+	}
 }
 
 type Cron struct {
@@ -145,13 +145,9 @@ func (c *Cron) Add(name, expr string, task func()) error {
 	return nil
 }
 
-// Start starts to schedule all jobs from now on.
+// Start starts to schedule all jobs.
 func (c *Cron) Start() {
-	c.startFrom(time.Now())
-}
-
-// startFrom starts to schedule all jobs from the given time now.
-func (c *Cron) startFrom(now time.Time) {
+	now := time.Now()
 	for _, job := range c.jobs {
 		job.Schedule(now)
 	}
