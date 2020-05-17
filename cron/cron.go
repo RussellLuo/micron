@@ -24,15 +24,29 @@ type Locker interface {
 }
 
 type Options struct {
+	// The location name, which must be "Local", "UTC" or a location name corresponding
+	// to a file in the IANA Time Zone database, such as "Asia/Shanghai".
+	//
+	// Defaults to "UTC".
+	Timezone string
+
 	// LockTTL is the time duration after which the successfully obtained lock
 	// will be released. It is a time window used to protect a job from
 	// being executed more than once per execution time of its schedule,
 	// which may be caused by the clock error among different machines.
+	//
 	// Defaults to 1s.
 	LockTTL time.Duration
 
 	// The handler for errors.
 	ErrHandler func(error)
+}
+
+func (o *Options) timezone() string {
+	if o == nil {
+		return "UTC"
+	}
+	return o.Timezone
 }
 
 func (o *Options) lockTTL() time.Duration {
@@ -119,14 +133,22 @@ type Cron struct {
 
 	locker Locker
 	opts   *Options
+
+	location *time.Location
 }
 
 // New creates an instance of Cron.
 func New(locker Locker, opts *Options) *Cron {
+	location, err := time.LoadLocation(opts.timezone())
+	if err != nil {
+		panic(err)
+	}
+
 	return &Cron{
-		jobs:   make(map[string]*job),
-		locker: locker,
-		opts:   opts,
+		jobs:     make(map[string]*job),
+		locker:   locker,
+		opts:     opts,
+		location: location,
 	}
 }
 
@@ -153,7 +175,7 @@ func (c *Cron) Add(name, expr string, task func()) error {
 
 // Start starts to schedule all jobs.
 func (c *Cron) Start() {
-	now := time.Now()
+	now := time.Now().In(c.location)
 	for _, job := range c.jobs {
 		job.Schedule(now)
 	}
