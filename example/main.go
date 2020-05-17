@@ -22,12 +22,15 @@ func main() {
 			Addr: *addr,
 		})),
 		&cron.Options{
-			LockTTL: 2 * time.Second, // Assume the maximal clock error is 2s.
+			Timezone: "Asia/Shanghai",
+			LockTTL:  2 * time.Second, // Assume the maximal clock error is 2s.
 			ErrHandler: func(err error) {
 				log.Printf("err: %v", err)
 			},
 		},
 	)
+
+	// The job will be executed at every 5th second.
 	c.Add("test", "*/5 * * * * * *", func() { // nolint:errcheck
 		log.Printf("hello")
 	})
