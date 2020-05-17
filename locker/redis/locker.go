@@ -7,6 +7,7 @@ import (
 	"github.com/go-redis/redis"
 )
 
+// Locker implements a distributed lock based on Redis (with a single instance).
 type Locker struct {
 	lockClient *redislock.Client
 }
