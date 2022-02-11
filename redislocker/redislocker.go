@@ -1,10 +1,11 @@
-package redis
+package redislocker
 
 import (
+	"context"
 	"time"
 
 	"github.com/bsm/redislock"
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 )
 
 // Locker implements a distributed lock based on Redis (with a single instance).
@@ -19,7 +20,8 @@ func New(client redis.UniversalClient) *Locker {
 }
 
 func (l *Locker) Lock(job string, ttl time.Duration) (bool, error) {
-	if _, err := l.lockClient.Obtain(job, ttl, nil); err != nil {
+	ctx := context.Background()
+	if _, err := l.lockClient.Obtain(ctx, job, ttl, nil); err != nil {
 		if err == redislock.ErrNotObtained {
 			return false, nil
 		}

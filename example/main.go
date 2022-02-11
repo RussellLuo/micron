@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/RussellLuo/micron/cron"
-	redislocker "github.com/RussellLuo/micron/locker/redis"
-	"github.com/go-redis/redis"
+	"github.com/RussellLuo/micron/redislocker"
+	"github.com/go-redis/redis/v8"
 )
 
 func main() {
