@@ -2,6 +2,7 @@ package cron
 
 import (
 	"errors"
+	"fmt"
 	"sync/atomic"
 	"time"
 	"unsafe"
@@ -10,7 +11,7 @@ import (
 )
 
 var (
-	ErrJobExists = errors.New("job already exists")
+	ErrAlreadyExists = errors.New("already exists")
 )
 
 // Locker is a distributed lock.
@@ -127,6 +128,20 @@ func (j *job) Stop() {
 	}
 }
 
+// Job represents a normal job, which will be scheduled by Cron.
+type Job struct {
+	// The unique name of the job.
+	Name string
+
+	// The cron expression. See https://github.com/gorhill/cronexpr#implementation.
+	//
+	// Note that the execution interval of the job must be greater than LockTTL.
+	Expr string
+
+	// The handler of the job.
+	Task func()
+}
+
 // Cron is a fault-tolerant job scheduler.
 type Cron struct {
 	jobs map[string]*job
@@ -153,13 +168,13 @@ func New(locker Locker, opts *Options) *Cron {
 }
 
 // Add adds a job with the given properties. If name already exists, Add will
-// return ErrJobExists, otherwise it will return nil.
+// return ErrAlreadyExists, otherwise it will return nil.
 //
 // Note that the execution interval of the job, which is specified by expr,
 // must be greater than LockTTL.
 func (c *Cron) Add(name, expr string, task func()) error {
 	if _, ok := c.jobs[name]; ok {
-		return ErrJobExists
+		return ErrAlreadyExists
 	}
 
 	c.jobs[name] = newJob(
@@ -169,6 +184,29 @@ func (c *Cron) Add(name, expr string, task func()) error {
 		c.locker,
 		c.opts,
 	)
+
+	return nil
+}
+
+// AddJob adds one or more jobs into Cron c. If the name of any job already
+// exists, AddJob will return ErrAlreadyExists, otherwise it will return nil.
+func (c *Cron) AddJob(job ...Job) error {
+	// Ensure the uniqueness of all job names first.
+	for _, j := range job {
+		if _, ok := c.jobs[j.Name]; ok {
+			return fmt.Errorf("add job %s: %w", j.Name, ErrAlreadyExists)
+		}
+	}
+
+	for _, j := range job {
+		c.jobs[j.Name] = newJob(
+			j.Name,
+			j.Task,
+			cronexpr.MustParse(j.Expr),
+			c.locker,
+			c.opts,
+		)
+	}
 
 	return nil
 }

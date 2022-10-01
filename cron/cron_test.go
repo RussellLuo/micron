@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"errors"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -144,7 +145,7 @@ func TestCron_Add(t *testing.T) {
 			name:    "add exists",
 			inName:  "job1",
 			inExpr:  "1 * * * * * *", // at second 1
-			wantErr: ErrJobExists,
+			wantErr: ErrAlreadyExists,
 		},
 		{
 			name:    "add more",
@@ -157,6 +158,53 @@ func TestCron_Add(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			err := cron.Add(c.inName, c.inExpr, func() {})
 			if err != c.wantErr {
+				t.Fatalf("Err: got (%v), want (%v)", err, c.wantErr)
+			}
+		})
+	}
+}
+
+func TestCron_AddJob(t *testing.T) {
+	cron := New(&locker{}, nil)
+
+	cases := []struct {
+		name     string
+		inJob    Job
+		wantJobs map[string]*job
+		wantErr  error
+	}{
+		{
+			name: "add new job",
+			inJob: Job{
+				Name: "job1",
+				Expr: "0 * * * * * *", // at second 0
+				Task: func() {},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "add duplicate job",
+			inJob: Job{
+				Name: "job1",
+				Expr: "1 * * * * * *", // at second 1
+				Task: func() {},
+			},
+			wantErr: ErrAlreadyExists,
+		},
+		{
+			name: "add more job",
+			inJob: Job{
+				Name: "job2",
+				Expr: "2 * * * * * *", // at second 2
+				Task: func() {},
+			},
+			wantErr: nil,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			err := cron.AddJob(c.inJob)
+			if !errors.Is(err, c.wantErr) {
 				t.Fatalf("Err: got (%v), want (%v)", err, c.wantErr)
 			}
 		})
