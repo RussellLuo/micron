@@ -3,7 +3,7 @@ module github.com/RussellLuo/micron/example
 go 1.17
 
 require (
-	github.com/RussellLuo/micron v0.0.0-20221008061521-b12f3577139f
+	github.com/RussellLuo/micron v0.0.0-20221008063213-c32d7ef42dd1
 	github.com/bsm/redislock v0.7.1
 	github.com/go-redis/redis/v8 v8.11.4
 )
