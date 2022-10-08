@@ -2,45 +2,17 @@ package cron
 
 import (
 	"errors"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"golang.org/x/sync/semaphore"
 )
-
-type locker struct {
-	locks sync.Map
-}
-
-func (l *locker) Lock(job string, ttl time.Duration) (bool, error) {
-	lock, ok := l.locks.Load(job)
-	if !ok {
-		// Not found.
-		//
-		// Re-try to load the lock first since it may have been set by others concurrently.
-		lock, _ = l.locks.LoadOrStore(job, semaphore.NewWeighted(1))
-	}
-
-	sem := lock.(*semaphore.Weighted)
-	success := sem.TryAcquire(1)
-	if success {
-		// Release the obtained lock after ttl elapses.
-		time.AfterFunc(ttl, func() {
-			sem.Release(1)
-		})
-	}
-
-	return success, nil
-}
 
 func TestJob_Schedule(t *testing.T) {
 	job := newJob(
 		"job",
 		nil,                // task will be set later
 		Every(time.Second), // executed every second
-		&locker{},
+		NewSemaphoreLocker(),
 		&Options{
 			// LockTTL must be less than the execution interval of the job.
 			LockTTL: 100 * time.Millisecond,
@@ -89,7 +61,7 @@ func TestJob_Stop(t *testing.T) {
 		"job",
 		nil,                  // task will be set later
 		Every(2*time.Second), // executed every two seconds
-		&locker{},
+		NewSemaphoreLocker(),
 		nil,
 	)
 
@@ -114,7 +86,7 @@ func TestJob_Stop(t *testing.T) {
 }
 
 func TestCron_Add(t *testing.T) {
-	cron := New(&locker{}, nil)
+	cron := New(NewSemaphoreLocker(), nil)
 
 	cases := []struct {
 		name     string
@@ -153,7 +125,7 @@ func TestCron_Add(t *testing.T) {
 }
 
 func TestCron_AddJob(t *testing.T) {
-	cron := New(&locker{}, nil)
+	cron := New(NewSemaphoreLocker(), nil)
 
 	cases := []struct {
 		name     string
@@ -201,7 +173,7 @@ func TestCron_AddJob(t *testing.T) {
 
 func TestCron_MultipleInstances(t *testing.T) {
 	count := int32(0)
-	locker := &locker{}
+	locker := NewSemaphoreLocker()
 
 	startCron := func() *Cron {
 		cron := New(locker, nil)
