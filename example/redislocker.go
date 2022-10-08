@@ -1,4 +1,4 @@
-package redislocker
+package main
 
 import (
 	"context"
@@ -8,18 +8,18 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-// Locker implements a distributed lock based on Redis (with a single instance).
-type Locker struct {
+// RedisLocker implements a distributed lock based on Redis (with a single instance).
+type RedisLocker struct {
 	lockClient *redislock.Client
 }
 
-func New(client redis.UniversalClient) *Locker {
-	return &Locker{
+func NewRedisLocker(client redis.UniversalClient) *RedisLocker {
+	return &RedisLocker{
 		lockClient: redislock.New(client),
 	}
 }
 
-func (l *Locker) Lock(job string, ttl time.Duration) (bool, error) {
+func (l *RedisLocker) Lock(job string, ttl time.Duration) (bool, error) {
 	ctx := context.Background()
 	if _, err := l.lockClient.Obtain(ctx, job, ttl, nil); err != nil {
 		if err == redislock.ErrNotObtained {

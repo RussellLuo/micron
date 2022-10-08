@@ -1,4 +1,4 @@
-module github.com/RussellLuo/micron/cron
+module github.com/RussellLuo/micron
 
 go 1.14
 

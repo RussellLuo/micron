@@ -1,9 +1,7 @@
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/RussellLuo/micron/cron v0.0.0-20220211075048-779783077796 h1:MGem7yjgRmS2/t0X95Li2L8bPcMRUJMbvXq8DJPcHDE=
-github.com/RussellLuo/micron/cron v0.0.0-20220211075048-779783077796/go.mod h1:Mq+QY1YdEN9eupmxn4KJoq4ZNjxSKcBiyNshmJ3ZGcA=
-github.com/RussellLuo/micron/redislocker v0.0.0-20220211075048-779783077796 h1:UpbA4ibdUzj3TQs9z1/iBpgshC6qINRz4dGYVq3XrE4=
-github.com/RussellLuo/micron/redislocker v0.0.0-20220211075048-779783077796/go.mod h1:tyYJzxZ5I3IcmuXpDeaAJuMvftSHeJgAYXzmKotDMvk=
+github.com/RussellLuo/micron v0.0.0-20221008061521-b12f3577139f h1:paj/6/5rsUYb0E0qMI4IvH3h2Aqq8UOtEegsD/Rmda4=
+github.com/RussellLuo/micron v0.0.0-20221008061521-b12f3577139f/go.mod h1:dSJ4Da5HdXgw8m9O8V0T5p+HQNEblPx01mXpV8tX2NY=
 github.com/bsm/ginkgo v1.16.4 h1:pkHpo2VJRvI0NGlxCYi8qovww76L7+g82MgM+UBvH4A=
 github.com/bsm/ginkgo v1.16.4/go.mod h1:RabIZLzOCPghgHJKUqHZpqrQETA5AnF4aCSIYy5C1bk=
 github.com/bsm/gomega v1.13.0 h1:fzOh8E2Wu/x407rP+v3mEb9yGJaMVguiJBtmFkuOmlc=
@@ -86,8 +84,9 @@ golang.org/x/net v0.0.0-20210428140749-89ef3d95e781/go.mod h1:OJAsFXCWl8Ukc7SiCT
 golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
-golang.org/x/sync v0.0.0-20210220032951-036812b2e83c h1:5KslGYwFpkhGh+Q16bwMP3cOontH8FOep7tGV86Y7SQ=
 golang.org/x/sync v0.0.0-20210220032951-036812b2e83c/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
+golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0 h1:cu5kTvlzcw1Q5S9f5ip1/cpiB4nXvw1XYzFPGgzLUOY=
+golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sys v0.0.0-20180909124046-d0be0721c37e/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190312061237-fead79001313/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=

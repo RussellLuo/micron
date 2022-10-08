@@ -8,8 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/RussellLuo/micron/cron"
-	"github.com/RussellLuo/micron/redislocker"
+	"github.com/RussellLuo/micron"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -17,11 +16,11 @@ func main() {
 	addr := flag.String("addr", "localhost:6379", "The address of the Redis server.")
 	flag.Parse()
 
-	c := cron.New(
-		redislocker.New(redis.NewClient(&redis.Options{
+	c := micron.New(
+		NewRedisLocker(redis.NewClient(&redis.Options{
 			Addr: *addr,
 		})),
-		&cron.Options{
+		&micron.Options{
 			Timezone: "Asia/Shanghai",
 			LockTTL:  2 * time.Second, // Assume the maximal clock error is 2s.
 			ErrHandler: func(err error) {
