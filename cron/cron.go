@@ -62,14 +62,14 @@ func (o *Options) errHandler() func(error) {
 	return o.ErrHandler
 }
 
-type Scheduler interface {
+type Schedule interface {
 	Next(time.Time) time.Time
 }
 
 type job struct {
-	name      string
-	task      func()
-	scheduler Scheduler
+	name     string
+	task     func()
+	schedule Schedule
 
 	locker Locker
 	opts   *Options
@@ -78,18 +78,18 @@ type job struct {
 	stopped int32
 }
 
-func newJob(name string, task func(), scheduler Scheduler, locker Locker, opts *Options) *job {
+func newJob(name string, task func(), schedule Schedule, locker Locker, opts *Options) *job {
 	return &job{
-		name:      name,
-		task:      task,
-		scheduler: scheduler,
-		locker:    locker,
-		opts:      opts,
+		name:     name,
+		task:     task,
+		schedule: schedule,
+		locker:   locker,
+		opts:     opts,
 	}
 }
 
 func (j *job) Schedule(prev time.Time) {
-	next := j.scheduler.Next(prev)
+	next := j.schedule.Next(prev)
 	d := time.Until(next)
 
 	t := time.AfterFunc(d, func() {

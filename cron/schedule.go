@@ -7,7 +7,7 @@ import (
 	"github.com/gorhill/cronexpr"
 )
 
-func Parse(expr string) (Scheduler, error) {
+func Parse(expr string) (Schedule, error) {
 	everyPrefix := "@every"
 	if strings.HasPrefix(expr, everyPrefix) {
 		// Expected format: "@every <duration>"
@@ -22,7 +22,7 @@ func Parse(expr string) (Scheduler, error) {
 	return cronexpr.Parse(expr)
 }
 
-func MustParse(expr string) Scheduler {
+func MustParse(expr string) Schedule {
 	s, err := Parse(expr)
 	if err != nil {
 		panic(err)
@@ -30,24 +30,24 @@ func MustParse(expr string) Scheduler {
 	return s
 }
 
-// everyScheduler is a Scheduler that will activate once every duration.
-type everyScheduler struct {
+// everySchedule is a Schedule that will activate once every duration.
+type everySchedule struct {
 	duration time.Duration
 }
 
-// Every returns a Scheduler that will activate once every duration.
+// Every returns a Schedule that will activate once every duration.
 // Duration d will be truncated down to a multiple of one second. If the
 // truncated result is zero, the final duration will be set to one second.
-func Every(d time.Duration) Scheduler {
+func Every(d time.Duration) Schedule {
 	d = d.Truncate(time.Second)
 	if d == 0 {
 		d = time.Second
 	}
-	return &everyScheduler{duration: d}
+	return &everySchedule{duration: d}
 }
 
-// Next returns the next time the scheduler will activate. The result time
+// Next returns the next time the schedule will activate. The result time
 // will be truncated down to a multiple of one second.
-func (s *everyScheduler) Next(prev time.Time) time.Time {
+func (s *everySchedule) Next(prev time.Time) time.Time {
 	return prev.Add(s.duration).Truncate(time.Second)
 }
