@@ -10,18 +10,6 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-type everyScheduler struct {
-	d time.Duration
-}
-
-func every(d time.Duration) *everyScheduler {
-	return &everyScheduler{d: d}
-}
-
-func (s *everyScheduler) Next(prev time.Time) time.Time {
-	return prev.Add(s.d)
-}
-
 type locker struct {
 	locks sync.Map
 }
@@ -51,7 +39,7 @@ func TestJob_Schedule(t *testing.T) {
 	job := newJob(
 		"job",
 		nil,                // task will be set later
-		every(time.Second), // executed every second
+		Every(time.Second), // executed every second
 		&locker{},
 		&Options{
 			// LockTTL must be less than the execution interval of the job.
@@ -100,7 +88,7 @@ func TestJob_Stop(t *testing.T) {
 	job := newJob(
 		"job",
 		nil,                  // task will be set later
-		every(2*time.Second), // executed every two seconds
+		Every(2*time.Second), // executed every two seconds
 		&locker{},
 		nil,
 	)

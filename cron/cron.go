@@ -6,8 +6,6 @@ import (
 	"sync/atomic"
 	"time"
 	"unsafe"
-
-	"github.com/gorhill/cronexpr"
 )
 
 var (
@@ -64,14 +62,14 @@ func (o *Options) errHandler() func(error) {
 	return o.ErrHandler
 }
 
-type scheduler interface {
+type Scheduler interface {
 	Next(time.Time) time.Time
 }
 
 type job struct {
 	name      string
 	task      func()
-	scheduler scheduler
+	scheduler Scheduler
 
 	locker Locker
 	opts   *Options
@@ -80,7 +78,7 @@ type job struct {
 	stopped int32
 }
 
-func newJob(name string, task func(), scheduler scheduler, locker Locker, opts *Options) *job {
+func newJob(name string, task func(), scheduler Scheduler, locker Locker, opts *Options) *job {
 	return &job{
 		name:      name,
 		task:      task,
@@ -133,7 +131,10 @@ type Job struct {
 	// The unique name of the job.
 	Name string
 
-	// The cron expression. See https://github.com/gorhill/cronexpr#implementation.
+	// The cron expression. Two formats are supported currently:
+	//
+	// - `@every <duration>`, where "duration" is a string accepted by `time.ParseDuration` (http://golang.org/pkg/time/#ParseDuration).
+	// - Standard Cron Expression (https://github.com/gorhill/cronexpr#implementation).
 	//
 	// Note that the execution interval of the job must be greater than LockTTL.
 	Expr string
@@ -180,7 +181,7 @@ func (c *Cron) Add(name, expr string, task func()) error {
 	c.jobs[name] = newJob(
 		name,
 		task,
-		cronexpr.MustParse(expr),
+		MustParse(expr),
 		c.locker,
 		c.opts,
 	)
@@ -202,7 +203,7 @@ func (c *Cron) AddJob(job ...Job) error {
 		c.jobs[j.Name] = newJob(
 			j.Name,
 			j.Task,
-			cronexpr.MustParse(j.Expr),
+			MustParse(j.Expr),
 			c.locker,
 			c.opts,
 		)
