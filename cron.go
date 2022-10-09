@@ -131,10 +131,24 @@ type Job struct {
 	// The unique name of the job.
 	Name string
 
-	// The cron expression. Two formats are supported currently:
+	// The cron expression. Three formats are supported currently:
 	//
-	// - `@every <duration>`, where "duration" is a string accepted by `time.ParseDuration` (http://golang.org/pkg/time/#ParseDuration).
-	// - Standard Cron Expression (https://github.com/gorhill/cronexpr#implementation).
+	// 1. Fixed-interval schedule:
+	//
+	//		@every <duration>
+	//
+	//	where `<duration>` is a string accepted by `time.ParseDuration` (http://golang.org/pkg/time/#ParseDuration).
+	//
+	// 2. Predefined cron expression (https://github.com/gorhill/cronexpr#predefined-cron-expressions):
+	//
+	//		@annually
+	//		@yearly
+	//		@monthly
+	//		@weekly
+	//		@daily
+	//		@hourly
+	//
+	// 3. Standard cron expression (https://github.com/gorhill/cronexpr#implementation).
 	//
 	// Note that the execution interval of the job must be greater than LockTTL.
 	Expr string

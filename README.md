@@ -23,7 +23,7 @@ A minimal implementation of the fault-tolerant job scheduler.
 ## Installation
 
 ```bash
-$ go install github.com/RussellLuo/micron/cron@latest
+$ go get -u github.com/RussellLuo/micron
 ```
 
 
