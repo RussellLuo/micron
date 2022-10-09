@@ -222,9 +222,12 @@ func (c *Cron) AddJob(job ...Job) error {
 	for _, j := range job {
 		// Prefer Handler to Task.
 		task := j.Task
-		if j.Handler != nil {
+		// We can't use j.Handler directly in closures, since this will cause
+		// for loop variable bug, see https://github.com/golang/go/discussions/56010.
+		handler := j.Handler
+		if handler != nil {
 			task = func() {
-				if err := j.Handler(context.Background()); err != nil {
+				if err := handler(context.Background()); err != nil {
 					c.opts.errHandler()(err)
 				}
 			}
