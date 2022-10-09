@@ -1,6 +1,7 @@
 package micron
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync/atomic"
@@ -153,8 +154,13 @@ type Job struct {
 	// Note that the execution interval of the job must be greater than LockTTL.
 	Expr string
 
-	// The handler of the job.
+	// The old-style handler of the job.
 	Task func()
+
+	// The new-style handler of the job.
+	//
+	// Note that Handler will be preferred if both Task and Handler are specified.
+	Handler func(context.Context) error
 }
 
 // Cron is a fault-tolerant job scheduler.
@@ -214,9 +220,19 @@ func (c *Cron) AddJob(job ...Job) error {
 	}
 
 	for _, j := range job {
+		// Prefer Handler to Task.
+		task := j.Task
+		if j.Handler != nil {
+			task = func() {
+				if err := j.Handler(context.Background()); err != nil {
+					c.opts.errHandler()(err)
+				}
+			}
+		}
+
 		c.jobs[j.Name] = newJob(
 			j.Name,
-			j.Task,
+			task,
 			MustParse(j.Expr),
 			c.locker,
 			c.opts,
